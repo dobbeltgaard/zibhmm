@@ -29,7 +29,6 @@ double logit(double x){
 
 
 /* Zero-inflated beta density */
-// [[Rcpp::export]]
 Eigen::VectorXd dbeta_p0(Eigen::VectorXd x, double mu, double phi, double p0){
   double shape1 = mu*phi;
   double shape2 = (1-mu)*phi;
@@ -51,7 +50,6 @@ Eigen::VectorXd dbeta_p0(Eigen::VectorXd x, double mu, double phi, double p0){
 
 
 
-// [[Rcpp::export]]
 Eigen::RowVectorXd dbeta_p0_v2(int m, double x, Eigen::VectorXd mu, Eigen::VectorXd phi, Eigen::VectorXd p0){
   double shape1(0);
   double shape2(0);
@@ -114,7 +112,6 @@ bool nextBool(double probability){
 }
 
 
-// [[Rcpp::export]]
 Eigen::VectorXd rbeta_p0(int n, int m, Eigen::VectorXd mu, Eigen::VectorXd phi, Eigen::VectorXd p0, Eigen::RowVectorXd u){
   // idea:
   // sample state j from 1 to m, with probs given by u_j.
@@ -416,7 +413,6 @@ double beta_p0_grad(double y, double mu, double phi, double p, int i){
 
 
 
-// [[Rcpp::export]]
 Eigen::VectorXd ecdf_cpp(Eigen::VectorXd sim, bool sorted = false) {
   int n = sim.size();
   
@@ -446,7 +442,6 @@ Eigen::VectorXd ecdf_cpp(Eigen::VectorXd sim, bool sorted = false) {
 }
 
 
-// [[Rcpp::export]]
 double pseudo_residual(double x, Eigen::VectorXd sim, bool sorted = false) {
   int n = sim.size();
   
@@ -497,7 +492,6 @@ int Heaviside(double x) {
   return res; 
 }
 
-// [[Rcpp::export]]
 double crps_cpp(Eigen::VectorXd sim, double y, bool sorted = false) {
   int n = sim.size();
   

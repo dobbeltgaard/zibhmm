@@ -5,7 +5,7 @@ rm(list = ls())
 ### Read code libraries ###
 ###########################
 
-setwd("C:/Users/ATBD/OneDrive - Danmarks Tekniske Universitet/Kurser/Icing events/Paper writing/02_Code_cleaned")#
+#setwd("C:/Users/ATBD/OneDrive - Danmarks Tekniske Universitet/Kurser/Icing events/Paper writing/02_Code_cleaned")#
 #setwd("C:/Users/askbi/OneDrive - Danmarks Tekniske Universitet/Kurser/Icing events/Paper writing/02_Code_cleaned")
 d <- read.csv("ice_data.csv")
 library(RcppEigen); library(Rcpp); library("zoo"); library("forecast");
@@ -19,7 +19,7 @@ for(i in 1:length(cov_names)){
   Z[,i] = matrix(as.matrix(d[, cov_names[i]]), ncol = length(cov_names[i])) * (1/apply(  abs(matrix(as.matrix(d[, cov_names]), ncol = length(cov_names))), 2, max))[i]
 }
 
-#NOTE: USE THE SCALED COVARIATES CONSISTENTLY
+
 
 
 ################################
