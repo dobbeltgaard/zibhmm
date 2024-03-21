@@ -5,9 +5,8 @@ rm(list = ls())
 ### Read code libraries ###
 ###########################
 
-#setwd("C:/Users/ATBD/OneDrive - Danmarks Tekniske Universitet/Kurser/Icing events/Paper writing/02_Code_cleaned")#
-#setwd("C:/Users/askbi/OneDrive - Danmarks Tekniske Universitet/Kurser/Icing events/Paper writing/02_Code_cleaned")
 d <- read.csv("ice_data.csv")
+
 library(RcppEigen); library(Rcpp); library("zoo"); library("forecast");
 sourceCpp("func_hmm.cpp")
 sourceCpp("func_hmm_transcov.cpp")
@@ -18,7 +17,6 @@ Z = matrix(NA, nrow = NROW(d), ncol = length(cov_names))
 for(i in 1:length(cov_names)){
   Z[,i] = matrix(as.matrix(d[, cov_names[i]]), ncol = length(cov_names[i])) * (1/apply(  abs(matrix(as.matrix(d[, cov_names]), ncol = length(cov_names))), 2, max))[i]
 }
-
 
 
 
@@ -58,6 +56,7 @@ forecast(arimafit,h = 12)
 ###################
 data = data.frame(d$icing, Z)
 linfit <- lm(d.icing ~ X1 + X2, data = data[d$wint1, ])
+linfit$coefficients
 linpredw2 <- predict(linfit, data[d$wint2, ])
 linpredw3 <- predict(linfit, data[d$wint3, ])
 
@@ -79,6 +78,7 @@ par0 = c(mu_init, phi_init, p0_init, mucov_init, phicov_init, p0cov_init);
 #hmm_loglik_Denscovs(m = m, y =d$icing.trans[d$wint1], w_pars = par0,delta = rep(1,m)/m, covs = matrix(as.matrix(d[d$wint1, cov_names]), ncol = length(cov_names)), phi_covs = phi_covs, p0_covs = p0_covs )
 betareg <- optim(par = par0, fn = beta_p0_loglik, y = d$icing.trans[d$wint1 & !is.na(d$icing.trans)], covs = Z[d$wint1 & !is.na(d$icing.trans), ], 
                  phi_covs = phi_covs, p0_covs = p0_covs, gr = NULL, method = "BFGS", control = list(maxit = 1000))
+length(betareg$par) # = 9 = number of estimated parameters
 2 * (betareg$value + length(betareg$par)) #AIC = 
 predbeta_w2 = beta_p0_forecast(y = d$icing.trans[d$wint2], w_pars = betareg$par, covs = Z[d$wint2, ], phi_covs = phi_covs, p0_covs = p0_covs)
 predbeta_w3 = beta_p0_forecast(y = d$icing.trans[d$wint3], w_pars = betareg$par, covs = Z[d$wint3, ], phi_covs = phi_covs, p0_covs = p0_covs)
@@ -157,6 +157,7 @@ par0 = c(mu_init, phi_init, p0_init, gam_init);
 r5 <- optim(par = par0, fn = hmm_loglik, delta = rep(1,m)/m, m = m,y = d$icing.trans[d$wint1], 
             gr = NULL, method = "BFGS", control = list(maxit = 1000), hessian = T)
 2 * (r5$value + length(r5$par)) #AIC = -1534.46
+length(r5$par) # = 35 = number of estimated parameters
 predr5_w2 = hmm_forecast(m = m, y = d$icing.trans[d$wint2], w_pars = r5$par, delta = rep(1,m)/m,ahead = 12 )
 predr5_w3 = hmm_forecast(m = m, y = d$icing.trans[d$wint3], w_pars = r5$par, delta = rep(1,m)/m,ahead = 12 )
 predr5_w2$CRPS_HMM #CRPS = 0.04814774
@@ -167,8 +168,8 @@ mean(abs(predr5_w3$Q2 - d$icing.trans[d$wint3]), na.rm = T) #MAE = 0.05032206
 
 
 save(r5, predr5_w2, predr5_w3, file = "hmm5_models_preds.RData")
+make_tpm(5, r5$par[-(1:15)])
 
-(predr5_w3)
 
 #6-state model 
 m = 6;
@@ -211,7 +212,7 @@ predr2transcov_w3 = hmm_forecast_Transcovs(m = m, y = d$icing.trans[d$wint3], w_
 predr2transcov_w2$CRPS_HMM #CRPS = 0.06352258
 predr2transcov_w3$CRPS_HMM #CRPS = 0.05362285
 
-#3-state model
+#3-state model !!
 m = 3;
 mu_init = rep(0.1,m); 
 phi_init = rep(2, m);
@@ -223,6 +224,7 @@ par0 = c(mu_init, phi_init, p0_init, gam_init, gamcov_init);
 r3transcov <- optim(par = par0, fn = hmm_loglik_Transcovs, delta = rep(1,m)/m, m = m,y = d$icing.trans[d$wint1], 
                     covs = matrix(as.matrix(d[d$wint1, cov_names]), ncol = length(cov_names)), gr = NULL, method = "BFGS", control = list(maxit = 1000))
 2 * (r3transcov$value + length(r3transcov$par)) #AIC = -818.3261
+length(r3transcov$par) # = 27 = number of estimated parameters
 predr3transcov_w2 = hmm_forecast_Transcovs(m = m, y = d$icing.trans[d$wint2], w_pars = r3transcov$par, delta = rep(1,m)/m, 
                                            covs = matrix(as.matrix(d[d$wint2, cov_names]), ncol = length(cov_names)), ahead = 12 )
 predr3transcov_w3 = hmm_forecast_Transcovs(m = m, y = d$icing.trans[d$wint3], w_pars = r3transcov$par, delta = rep(1,m)/m, 
@@ -281,6 +283,7 @@ par0 = c(mu_init, phi_init, p0_init, mucov_init, phicov_init, p0cov_init, gam_in
 r2denscov <- optim(par = par0, fn = hmm_loglik_Denscovs, m = m,y = d$icing.trans[d$wint1], delta = rep(1,m)/m,
                     covs = matrix(as.matrix(d[d$wint1, cov_names]), ncol = length(cov_names)), phi_covs = phi_covs, p0_covs = p0_covs, gr = NULL, method = "BFGS", control = list(maxit = 1000))
 2 * (r2denscov$value + length(r2denscov$par)) #AIC = 
+length(r2denscov$par) # = 20 = number of estimated parameters
 predr2denscov_w2 = hmm_forecast_Denscov(m = m, y = d$icing.trans[d$wint2], w_pars = r2denscov$par, delta = rep(1,m)/m, 
                                            covs = matrix(as.matrix(d[d$wint2, cov_names]), ncol = length(cov_names)), ahead = 12, p0_covs = p0_covs )
 predr2denscov_w3 = hmm_forecast_Denscov(m = m, y = d$icing.trans[d$wint3], w_pars = r2denscov$par, delta = rep(1,m)/m, 
@@ -390,3 +393,50 @@ predHMM.denscov$CRPS_HMM
 # // - regression on trans probs vs. density pars
 # // - analytical gradient information, find paper showing it incl. hessian
 # // - make list of papers with similar methodology of beta hmm. Difference is the explicit forecast setting
+
+
+
+
+
+####################################
+###### FURTHER EXTRA ANALYSIS ###### 
+####################################
+###
+### Compute correlation between daily average icing levels and daily number of missing observation
+###
+library(dplyr)
+df = d
+df$timestamp_col = d$X
+# Convert the timestamp column to POSIXct format
+df$timestamp_col <- as.POSIXct(df$timestamp_col, format = "%Y/%m/%d %H:%M:%S")
+# Extract date and hour separately
+df$date <- as.Date(df$timestamp_col)
+df$hour <- format(df$timestamp_col, "%H")
+# Group by date and calculate daily averages
+daily_avg_df <- df %>%
+  group_by(date) %>%
+  summarize(daily_average_ice = mean(icing, na.rm = TRUE),
+            daily_average_cbh = mean(cbh, na.rm = TRUE),
+            daily_average_lnsp = mean(lnsp, na.rm = TRUE),
+            daily_average_t = mean(t, na.rm = TRUE),
+            daily_average_ws = mean(ws, na.rm = TRUE),
+            daily_average_q = mean(q, na.rm = TRUE),
+            daily_average_ciwc = mean(ciwc, na.rm = TRUE),
+            daily_missing = sum(is.na(icing)))
+# View the new dataframe
+print(daily_avg_df)
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_ice, use = "pairwise.complete.obs")
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_cbh, use = "pairwise.complete.obs")
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_lnsp, use = "pairwise.complete.obs")
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_t, use = "pairwise.complete.obs")
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_ws, use = "pairwise.complete.obs")
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_q, use = "pairwise.complete.obs")
+cor(daily_avg_df$daily_missing, daily_avg_df$daily_average_ciwc, use = "pairwise.complete.obs")
+
+
+
+log.trans <- function(a,b,x){
+  return( 1/(1 + a*exp(b*x)) ) 
+}
+log.trans(0.01, 0.015, 600)
+
